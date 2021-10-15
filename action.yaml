@@ -1,0 +1,72 @@
+name: 'GitHub Notify Deployment Action'
+
+description: 'GitHub Notify Deployment Action'
+
+inputs:
+  short_sha:
+    description: 'Short SHA version'
+    required: true
+  environment:
+    description: 'Environment deployed to'
+    required: true
+  deploy_state:
+    description: 'Deployment State'
+    required: true
+  jira_client_id:
+    description: 'Jira Client ID'
+    required: true
+  jira_secret:
+    description: 'Jira Secret'
+    required: true
+  jira_url:
+    description: 'Jira URL'
+    required: true
+  jira_ticket:
+    description: 'Jira Ticket'
+    required: false
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Parse Jira Keys from All Commits
+      id: jira_keys
+      uses: HighwayThree/jira-extract-issue-keys@master
+      with:
+        is-pull-request: ${{ github.event_name == 'pull_request' }}
+        commit-message: ${{ inputs.jira_ticket || '' }}
+
+    - name: Push Deployment Info to Jira
+      uses: HighwayThree/jira-upload-deployment-info@master
+      with:
+        client-id: '${{ inputs.jira_client_id }}'
+        client-secret: '${{ inputs.jira_secret }}'
+        cloud-instance-base-url: '${{ inputs.jira_url }}'
+        deployment-sequence-number: '${{ github.run_id }}'
+        description: "Deployment version ${{ inputs.short_sha }}"
+        display-name: "Deployment version ${{ inputs.short_sha }}"
+        environment-display-name: "${{ inputs.environment }}"
+        environment-id: "${{ inputs.environment }}"
+        environment-type: "${{ (inputs.environment == 'sandbox' && 'staging') || (inputs.environment || 'staging') }}"
+        issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
+        label: 'Deployment version ${{ inputs.short_sha }}'
+        last-updated: '${{ github.event.head_commit.timestamp }}'
+        pipeline-display-name: 'Workflow: ${{ github.repository }} ${{ github.workflow }} (#${{ github.run_number }})'
+        pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
+        pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+        state: "${{ inputs.deploy_state }}"
+        update-sequence-number: '${{ github.run_id }}'
+        url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+
+    - name: Checkout for Sentry Commits
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 10
+
+    - name: Push Release Info to Sentry
+      uses: getsentry/action-release@v1
+      with:
+        ignore_empty: true
+        ignore_missing: true
+        environment: ${{ inputs.environment }}
+        version: ${{ inputs.short_sha }}
