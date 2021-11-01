@@ -14,17 +14,19 @@ on:
 jobs:
   deploy:
   ...
-  
+
   notify:
+    needs: deploy
+
     runs-on: ubuntu-latest
 
     if: always()
 
     steps:
       - name: Notify Deployment
-        uses: satws/notify-deployment-composite-action@latest
+        uses: satws/notify-deployment-composite-action@main
         env:
-          GITHUB_TOKEN: ${{ secrets.JIRA_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ github.event.repository.name }}
@@ -33,6 +35,7 @@ jobs:
           jira_secret: ${{ secrets.JIRA_SECRET }}
           jira_url: ${{ secrets.JIRA_URL }}
           jira_ticket: ${{ github.event.client_payload.jira_ticket || '' }}
+          short_sha: ${{ needs.deploy.outputs.short_sha || '' }}
           environment: ${{ github.event.client_payload.environment || 'sandbox' }}
           deploy_state: ${{ (needs.deploy.outputs.deploy_state == 0 && 'successful') || 'failed' }}
 ```
