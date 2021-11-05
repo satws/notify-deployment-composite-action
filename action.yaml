@@ -3,33 +3,52 @@ name: 'GitHub Notify Deployment Action'
 description: 'GitHub Notify Deployment Action'
 
 inputs:
-  short_sha:
-    description: 'Short SHA version'
-    required: true
   environment:
-    description: 'Environment deployed to'
+    description: 'Environment to deploy'
     required: true
-  deploy_state:
-    description: 'Deployment State'
+    default: 'sandbox'
+  revision:
+    description: 'Revision to deploy'
     required: true
-  jira_client_id:
-    description: 'Jira Client ID'
+  deploy-state:
+    description: 'State of deployment'
     required: true
-  jira_secret:
-    description: 'Jira Secret'
-    required: true
-  jira_url:
-    description: 'Jira URL'
-    required: true
-  jira_ticket:
+    default: 'successful'
+  jira:
+    description: 'Notify Jira'
+    required: false
+    default: 'false'
+  jira-ticket:
     description: 'Jira Ticket'
+    required: false
+  new-relic:
+    description: 'Notify New Relic'
+    required: false
+    default: 'false'
+  new-relic-application-id:
+    description: 'New Relic Application ID to ad the marker'
+    required: false
+    default: 'false'
+  sentry:
+    description: 'Notify Sentry'
+    required: false
+    default: 'false'
+  sentry-override-environment:
+    description: 'Overrides environment sent to Sntry on relase'
     required: false
 
 runs:
   using: "composite"
 
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+    SENTRY_PROJECT: ${{ github.event.repository.name }}
+
   steps:
     - name: Parse Jira Keys from All Commits
+      if: inputs.jira == 'true'
       id: jira_keys
       uses: HighwayThree/jira-extract-issue-keys@master
       with:
@@ -37,19 +56,20 @@ runs:
         commit-message: ${{ inputs.jira_ticket || '' }}
 
     - name: Push Deployment Info to Jira
+      if: inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
       uses: HighwayThree/jira-upload-deployment-info@master
       with:
-        client-id: '${{ inputs.jira_client_id }}'
-        client-secret: '${{ inputs.jira_secret }}'
-        cloud-instance-base-url: '${{ inputs.jira_url }}'
+        client-id: ${{ secrets.JIRA_CLIENT_ID }}
+        client-secret: ${{ secrets.JIRA_SECRET }}
+        cloud-instance-base-url: ${{ secrets.JIRA_URL }}
         deployment-sequence-number: '${{ github.run_id }}'
-        description: "Deployment version ${{ inputs.short_sha }}"
-        display-name: "Deployment version ${{ inputs.short_sha }}"
+        description: "Deployment version ${{ inputs.revision }}"
+        display-name: "Deployment version ${{ inputs.revision }}"
         environment-display-name: "${{ inputs.environment }}"
         environment-id: "${{ inputs.environment }}"
         environment-type: "${{ (inputs.environment == 'sandbox' && 'staging') || (inputs.environment || 'staging') }}"
         issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-        label: 'Deployment version ${{ inputs.short_sha }}'
+        label: 'Deployment version ${{ inputs.revision }}'
         last-updated: '${{ github.event.head_commit.timestamp }}'
         pipeline-display-name: 'Workflow: ${{ github.repository }} ${{ github.workflow }} (#${{ github.run_number }})'
         pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
@@ -59,14 +79,25 @@ runs:
         url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
 
     - name: Checkout for Sentry Commits
+      if: inputs.sentry == 'true'
       uses: actions/checkout@v2
       with:
         fetch-depth: 10
 
     - name: Push Release Info to Sentry
+      if: inputs.sentry == 'true'
       uses: getsentry/action-release@v1
       with:
         ignore_empty: true
         ignore_missing: true
-        environment: ${{ inputs.environment }}
-        version: ${{ inputs.short_sha }}
+        environment: ${{ (inputs.sentry-override-environment && inputs.sentry-override-environment) || inputs.environment }}
+        version: ${{ inputs.revision }}
+
+    - name: Create New Relic deployment marker
+      if: inputs.new-relic == 'true'
+      uses: newrelic/deployment-marker-action@v1
+      with:
+        apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
+        accountId: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+        applicationId: ${{ inputs.new-relic-application-id }}
+        revision: ${{ inputs.revision }}
