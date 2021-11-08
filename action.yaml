@@ -40,12 +40,6 @@ inputs:
 runs:
   using: "composite"
 
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-    SENTRY_PROJECT: ${{ github.event.repository.name }}
-
   steps:
     - name: Parse Jira Keys from All Commits
       if: inputs.jira == 'true'
@@ -59,9 +53,9 @@ runs:
       if: inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
       uses: HighwayThree/jira-upload-deployment-info@master
       with:
-        client-id: ${{ secrets.JIRA_CLIENT_ID }}
-        client-secret: ${{ secrets.JIRA_SECRET }}
-        cloud-instance-base-url: ${{ secrets.JIRA_URL }}
+        client-id: ${{ env.JIRA_CLIENT_ID }}
+        client-secret: ${{ env.JIRA_SECRET }}
+        cloud-instance-base-url: ${{ env.JIRA_URL }}
         deployment-sequence-number: '${{ github.run_id }}'
         description: "Deployment version ${{ inputs.revision }}"
         display-name: "Deployment version ${{ inputs.revision }}"
@@ -97,7 +91,7 @@ runs:
       if: inputs.new-relic == 'true'
       uses: newrelic/deployment-marker-action@v1
       with:
-        apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
-        accountId: ${{ secrets.NEW_RELIC_ACCOUNT_ID }}
+        apiKey: ${{ env.NEW_RELIC_API_KEY }}
+        accountId: ${{ env.NEW_RELIC_ACCOUNT_ID }}
         applicationId: ${{ inputs.new-relic-application-id }}
         revision: ${{ inputs.revision }}
