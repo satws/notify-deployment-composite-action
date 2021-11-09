@@ -19,7 +19,7 @@ inputs:
     required: false
     default: 'false'
   jira-ticket:
-    description: 'Jira Ticket'
+    description: 'Any string to catch the tickets from'
     required: false
   new-relic:
     description: 'Notify New Relic'
@@ -34,7 +34,7 @@ inputs:
     required: false
     default: 'false'
   sentry-override-environment:
-    description: 'Overrides environment sent to Sntry on relase'
+    description: 'Overrides environment sent to Sentry on release'
     required: false
 
 runs:
@@ -47,7 +47,7 @@ runs:
       uses: HighwayThree/jira-extract-issue-keys@master
       with:
         is-pull-request: ${{ github.event_name == 'pull_request' }}
-        commit-message: ${{ inputs.jira_ticket || '' }}
+        commit-message: ${{ inputs.jira-ticket || '' }}
 
     - name: Push Deployment Info to Jira
       if: inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
