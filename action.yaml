@@ -51,7 +51,7 @@ runs:
         commit-message: ${{ inputs.jira-ticket }}
 
     - name: Push Deployment Info to Jira
-      if: inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
+      if: always() && inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
       uses: HighwayThree/jira-upload-deployment-info@master
       with:
         client-id: ${{ env.JIRA_CLIENT_ID }}
@@ -74,13 +74,13 @@ runs:
         url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
 
     - name: Checkout for Sentry Commits
-      if: inputs.sentry == 'true'
+      if: always() && inputs.sentry == 'true'
       uses: actions/checkout@v2
       with:
         fetch-depth: 10
 
     - name: Push Release Info to Sentry
-      if: inputs.sentry == 'true'
+      if: always() && inputs.sentry == 'true'
       uses: getsentry/action-release@v1
       with:
         ignore_empty: true
@@ -89,7 +89,7 @@ runs:
         version: ${{ inputs.revision }}
 
     - name: Create New Relic deployment marker
-      if: inputs.new-relic == 'true'
+      if: always() && inputs.new-relic == 'true'
       uses: newrelic/deployment-marker-action@v1
       with:
         apiKey: ${{ env.NEW_RELIC_API_KEY }}
