@@ -29,6 +29,10 @@ inputs:
     description: 'New Relic Application ID to ad the marker'
     required: false
     default: 'false'
+  slack:
+    description: 'Notify Slack'
+    required: false
+    default: 'false'
   sentry:
     description: 'Notify Sentry'
     required: false
@@ -96,3 +100,57 @@ runs:
         accountId: ${{ env.NEW_RELIC_ACCOUNT_ID }}
         applicationId: ${{ inputs.new-relic-application-id }}
         revision: ${{ inputs.revision }}
+
+    - name: Post to a Slack channel
+      if: always() && inputs.slack == 'true'
+      uses: slackapi/slack-github-action@main
+      with:
+        channel-id: 'deployments'
+        slack-message: 'Deployed revision *${{ inputs.revision }}* to *${{ inputs.environment }}* of *${{ github.repository }}*'
+        payload: |
+          {
+            "user_as": true,
+          	"blocks": [
+          		{
+          			"type": "section",
+          			"text": {
+          				"type": "mrkdwn",
+          				"text": "Deployment to ${{ github.repository }}"
+          			}
+          		},
+          		{
+          			"type": "section",
+          			"fields": [
+          				{
+          					"type": "mrkdwn",
+          					"text": "*Version:*\n${{ inputs.revision }}"
+          				},
+          				{
+          					"type": "mrkdwn",
+          					"text": "*Environment:*\n${{ inputs.environment }}"
+          				},
+          				{
+          					"type": "mrkdwn",
+          					"text": "*Finished:*\n${{ github.repository.updated_at }}"
+          				}
+          			]
+          		},
+          		{
+          			"type": "actions",
+          			"elements": [
+          				{
+          					"type": "button",
+          					"text": {
+          						"type": "plain_text",
+          						"emoji": true,
+          						"text": "Workflow"
+          					},
+          					"style": "primary",
+          					"value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          				}
+          			]
+          		}
+          	]
+          }
+      env:
+        SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
