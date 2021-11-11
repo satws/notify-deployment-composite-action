@@ -89,6 +89,7 @@ runs:
       with:
         ignore_empty: true
         ignore_missing: true
+        finalize: ${{ (inputs.deploy-state == 'successful' ) && true || false }}
         environment: ${{ (inputs.sentry-override-environment && inputs.sentry-override-environment) || inputs.environment }}
         version: ${{ inputs.revision }}
 
