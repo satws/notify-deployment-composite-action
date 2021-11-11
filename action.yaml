@@ -107,7 +107,7 @@ runs:
       uses: slackapi/slack-github-action@main
       with:
         channel-id: 'deployments'
-        slack-message: 'Deployed revision *${{ inputs.revision }}* to *${{ inputs.environment }}* of *${{ github.repository }}*'
+        slack-message: '${{ (inputs.deploy-state == "successful" ) && :white_check_mark: || :no_entry_sign: }} Deployed revision *${{ inputs.revision }}* to *${{ inputs.environment }}* of *${{ github.repository }}*'
         payload: |
           {
             "user_as": true,
@@ -116,7 +116,7 @@ runs:
           			"type": "section",
           			"text": {
           				"type": "mrkdwn",
-          				"text": "Deployment to ${{ github.repository }}"
+          				"text": "${{ (inputs.deploy-state == "successful" ) && :white_check_mark: || :no_entry_sign: }} Deployment to ${{ github.repository }}"
           			}
           		},
           		{
