@@ -94,7 +94,7 @@ runs:
         version: ${{ inputs.revision }}
 
     - name: Create New Relic deployment marker
-      if: always() && inputs.new-relic == 'true'
+      if: always() && inputs.new-relic == 'true' && inputs.deploy-state == 'successful'
       uses: newrelic/deployment-marker-action@v1
       with:
         apiKey: ${{ env.NEW_RELIC_API_KEY }}
