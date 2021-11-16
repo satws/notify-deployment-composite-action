@@ -72,10 +72,10 @@ runs:
         last-updated: '${{ github.event.head_commit.timestamp }}'
         pipeline-display-name: 'Workflow: ${{ github.repository }} ${{ github.workflow }} (#${{ github.run_number }})'
         pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
-        pipeline-url: '${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}'
+        pipeline-url: 'https://github.com/${{ github.repository }}//actions/runs/${{ github.run_id }}'
         state: "${{ inputs.deploy-state }}"
         update-sequence-number: '${{ github.run_id }}'
-        url: "${{ github.event.repository.url }}/actions/runs/${{ github.run_id }}"
+        url: "https://github.com/${{ github.repository }}//actions/runs/${{ github.run_id }}"
 
     - name: Checkout for Sentry Commits
       if: always() && inputs.sentry == 'true'
@@ -107,51 +107,43 @@ runs:
       uses: slackapi/slack-github-action@main
       with:
         channel-id: 'deployments'
-        slack-message: 'Deployed revision *${{ inputs.revision }}* to *${{ inputs.environment }}* of *${{ github.repository }}* \\n *Status:* ${{ inputs.deploy-state }}'
         payload: |
           {
-            "user_as": true,
-          	"blocks": [
-          		{
-          			"type": "section",
-          			"text": {
-          				"type": "mrkdwn",
-          				"text": "Deployment to ${{ github.repository }}"
-          			}
-          		},
-          		{
-          			"type": "section",
-          			"fields": [
-          				{
-          					"type": "mrkdwn",
-          					"text": "*Version:*\n${{ inputs.revision }}"
-          				},
-          				{
-          					"type": "mrkdwn",
-          					"text": "*Environment:*\n${{ inputs.environment }}"
-          				},
-          				{
-          					"type": "mrkdwn",
-          					"text": "*Finished:*\n${{ github.repository.updated_at }}"
-          				}
-          			]
-          		},
-          		{
-          			"type": "actions",
-          			"elements": [
-          				{
-          					"type": "button",
-          					"text": {
-          						"type": "plain_text",
-          						"emoji": true,
-          						"text": "Workflow"
-          					},
-          					"style": "primary",
-          					"value": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          				}
-          			]
-          		}
-          	]
+            "as_user": false,
+            "username": "GitHub Action",
+            "attachments": [
+              {
+                "mrkdwn_in": [
+                    "pretext",
+                    "text",
+                    "value"
+                ],
+                "pretext": "Deployment to <https://github.com/${{ github.repository }}|${{ github.repository }}>",
+                "color": "${{ (inputs.deploy-state == 'successful' && '#36a64f') || '#bd2b2b' }}",
+                "fields": [
+                  {
+                    "title": "Author",
+                    "value": "<https://github.com/${{ github.actor }}|${{ github.actor }}>",
+                    "short": false
+                  },
+                  {
+                    "title": "Version",
+                    "value": "<https://github.com/${{ github.repository }}/commit/${{ inputs.revision }}|${{ inputs.revision }}>",
+                    "short": true
+                  },
+                  {
+                    "title": "Environment",
+                    "value": "<https://github.com/${{ github.repository }}/deployments/activity_log?environment=${{ inputs.environment }}|${{ inputs.environment }}>",
+                    "short": true
+                  },
+                  {
+                    "title": "Workflow",
+                    "value": "<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} #${{ github.run_number }}>",
+                    "short": true
+                  }
+                ]
+              }
+            ]
           }
       env:
         SLACK_BOT_TOKEN: ${{ env.SLACK_BOT_TOKEN }}
