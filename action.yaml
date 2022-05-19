@@ -78,13 +78,13 @@ runs:
         url: "https://github.com/${{ github.repository }}//actions/runs/${{ github.run_id }}"
 
     - name: Checkout for Sentry Commits
-      if: always() && inputs.sentry == 'true'
+      if: always() && inputs.sentry == 'true' && inputs.deploy-state == 'successful'
       uses: actions/checkout@v2
       with:
         fetch-depth: 10
 
     - name: Push Release Info to Sentry
-      if: always() && inputs.sentry == 'true'
+      if: always() && inputs.sentry == 'true' && inputs.deploy-state == 'successful'
       uses: getsentry/action-release@v1
       with:
         ignore_empty: true
