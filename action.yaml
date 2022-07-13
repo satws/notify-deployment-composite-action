@@ -45,38 +45,6 @@ runs:
   using: "composite"
 
   steps:
-    - name: Parse Jira Keys from All Commits
-      if: inputs.jira == 'true'
-      id: jira_keys
-      uses: HighwayThree/jira-extract-issue-keys@master
-      with:
-        is-pull-request: ${{ github.event_name == 'pull_request' }}
-        parse-all-commits: ${{ github.event_name == 'push' }}
-        commit-message: ${{ inputs.jira-ticket }}
-
-    - name: Push Deployment Info to Jira
-      if: always() && inputs.jira == 'true' && steps.jira_keys.outputs.jira-keys != ''
-      uses: HighwayThree/jira-upload-deployment-info@master
-      with:
-        client-id: ${{ env.JIRA_CLIENT_ID }}
-        client-secret: ${{ env.JIRA_SECRET }}
-        cloud-instance-base-url: ${{ env.JIRA_URL }}
-        deployment-sequence-number: '${{ github.run_id }}'
-        description: "Deployment version ${{ inputs.revision }}"
-        display-name: "Deployment version ${{ inputs.revision }}"
-        environment-display-name: "${{ inputs.environment }}"
-        environment-id: "${{ inputs.environment }}"
-        environment-type: "${{ (inputs.environment == 'sandbox' && 'staging') || (inputs.environment || 'staging') }}"
-        issue-keys: "${{ steps.jira_keys.outputs.jira-keys }}"
-        label: 'Deployment version ${{ inputs.revision }}'
-        last-updated: '${{ github.event.head_commit.timestamp }}'
-        pipeline-display-name: 'Workflow: ${{ github.repository }} ${{ github.workflow }} (#${{ github.run_number }})'
-        pipeline-id: '${{ github.repository }} ${{ github.workflow }}'
-        pipeline-url: 'https://github.com/${{ github.repository }}//actions/runs/${{ github.run_id }}'
-        state: "${{ inputs.deploy-state }}"
-        update-sequence-number: '${{ github.run_id }}'
-        url: "https://github.com/${{ github.repository }}//actions/runs/${{ github.run_id }}"
-
     - name: Checkout for Sentry Commits
       if: always() && inputs.sentry == 'true' && inputs.deploy-state == 'successful'
       uses: actions/checkout@v2
